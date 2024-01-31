@@ -1,5 +1,6 @@
 public enum TaskState {
     READY,
     WAITING,
-    RUNNING
+    RUNNING,
+    FINISHED
 }

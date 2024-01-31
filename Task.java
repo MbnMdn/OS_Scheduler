@@ -1,9 +1,10 @@
-public class Task {
+public class Task implements Comparable<Task> {
     public String name;
     public TaskType type;
     public TaskState state;
     public int duration;
     public int durationOnCpu;
+    public int priority;
 
     public Task(String name, char type, TaskState state, int duration) {
         this.name = name;
@@ -13,17 +14,28 @@ public class Task {
     }
 
     public Task() {
+
     }
 
     @Override
     public String toString() {
-        return "Task{" +
-                "name='" + name + '\'' +
-//                ", type=" + type +
-//                ", state=" + state +
-//                ", durationOnCpu=" + durationOnCpu +
-//                ", duration=" + duration +
-                '}';
+        return this.name;
     }
+
+    public void incrementDurationOnCpu() {
+        this.durationOnCpu++;
+    }
+
+    public char getType() {
+        return type.toString().charAt(0);
+    }
+
+
+    @Override
+    public int compareTo(Task o) {
+        return Character.compare(o.getType(), this.getType());
+    }
+
+
 }
 
