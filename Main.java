@@ -2,14 +2,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-/*
-3   4   5
-4
-t1  X   5
-t2  Z   8
-t3  Y   4
-t4  Z   2
-*/
 
 public class Main {
     static final int PROCESSOR_COUNT = 4;
@@ -32,7 +24,7 @@ public class Main {
                 String name = scanner.next();
                 char type = scanner.next().charAt(0);
                 int duration = scanner.nextInt();
-                readyQueue.add(new Task(name, type, TaskState.READY, duration));
+                readyQueue.add(new Task(name, type, duration));
             }
         }
 
@@ -53,6 +45,7 @@ public class Main {
 
 
             for (int i = 0; i < PROCESSOR_COUNT; i++) {
+                processors.get(i).setCurrentRound(Round);
                 Thread thread = new Thread(processors.get(i));
                 processorThreads[i] = thread;
                 processorThreads[i].start();
@@ -78,8 +71,6 @@ public class Main {
         }
 
     }
-//Core: 1, Time: 1, Task: t1
-
 
     public static String printResult(ArrayList<Processor> arrayList, int Round) {
         StringBuilder result = new StringBuilder();
@@ -87,7 +78,7 @@ public class Main {
         for (Processor core : arrayList) {
             result.append("Core: ").append(core.name);
             result.append(", Time: ").append(Round);
-            result.append(", Task: ").append(core.currentTask != null ? core.currentTask.name : "IDLE").append("\n");
+            result.append(", Task: ").append(core.currentTask != null ? core.currentTask.toString() : "IDLE").append("\n");
         }
 
 
