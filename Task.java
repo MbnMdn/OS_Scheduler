@@ -17,7 +17,7 @@ public class Task implements Comparable<Task> {
 
     @Override
     public String toString() {
-        return this.name + " " + this.durationOnWait;
+        return this.name;
     }
 
     public void setStartRound(int startRound) {

@@ -27,48 +27,148 @@ public class Processor implements Runnable {
     public void FCFS() {
         if (this.currentTask == null && !this.readyQueue.isEmpty()) {
 
-            List<Task> localQueue = new ArrayList<>(readyQueue);
+            Queue<Task> localQueue = new PriorityQueue<>(readyQueue);
 
-            Comparator<Task> durationOnWaitComparator = Comparator.comparing(task -> task.durationOnWait);
-            Comparator<Task> priorityComparator = Comparator.comparing(task -> task.priority);
-            priorityComparator = priorityComparator.thenComparing(durationOnWaitComparator.reversed());
+            Task topTask = localQueue.poll();
 
-            localQueue.sort(priorityComparator);
+            assert topTask != null;
 
-            Collections.reverse(localQueue);
-            if(!localQueue.isEmpty()){
-                Task topTask = localQueue.remove(0);
-
-                if (checkResourceAvailability(topTask.type, true)) {
-                    topTask.setStartRound(this.currentRound);
-                    topTask.state = TaskState.RUNNING;
-                    this.currentTask = topTask;
-                    this.readyQueue.remove(topTask);
-                    topTask.incrementDurationOnCpu();
-                    if (topTask.durationOnCpu == topTask.duration) {
-                        topTask.state = TaskState.FINISHED;
-                        this.freeResources(topTask.type);
-                        this.currentTask = null;
-                    }
-                } else {
-                    topTask.state = TaskState.WAITING;
-                    this.readyQueue.remove(topTask);
-                    this.waitingQueue.add(topTask);
+            if (checkResourceAvailability(topTask.type, true)) {
+                topTask.setStartRound(this.currentRound);
+                topTask.state = TaskState.RUNNING;
+                topTask.startRound = currentRound;
+                this.currentTask = topTask;
+                this.readyQueue.remove(topTask);
+                if (topTask.durationOnCpu == topTask.duration) {
+                    topTask.state = TaskState.FINISHED;
+                    this.freeResources(topTask.type);
+                    this.currentTask = null;
                 }
+                topTask.incrementDurationOnCpu();
+            } else {
+                topTask.state = TaskState.WAITING;
+                this.readyQueue.remove(topTask);
+                this.waitingQueue.add(topTask);
             }
 
         } else if (this.currentTask != null) {
             Task topTask = this.currentTask;
-            topTask.incrementDurationOnCpu();
 
             if (topTask.durationOnCpu == topTask.duration) {
                 topTask.state = TaskState.FINISHED;
+                this.freeResources(topTask.type);
+                this.currentTask = null;
             }
 
-        } else if (!this.waitingQueue.isEmpty()) {
+            topTask.incrementDurationOnCpu();
+        }
+
+        if (!this.waitingQueue.isEmpty()) {
+            processWaitingQueue();
+        }
+
+    }
+
+    public void SJF() {
+
+        if (this.currentTask == null && !this.readyQueue.isEmpty()) {
+
+            List<Task> localQueue = new ArrayList<>(readyQueue);
+
+            Comparator<Task> durationCompare = Comparator.comparing(task -> task.duration);
+            Comparator<Task> priorityComparator = Comparator.comparing(task -> task.priority);
+
+            priorityComparator = durationCompare.thenComparing(priorityComparator.reversed());
+            localQueue.sort(priorityComparator);
+
+            Task topTask = localQueue.remove(0);
+
+            assert topTask != null;
+
+            if (checkResourceAvailability(topTask.type, true)) {
+                topTask.setStartRound(this.currentRound);
+                topTask.state = TaskState.RUNNING;
+                topTask.startRound = currentRound;
+                this.currentTask = topTask;
+                this.readyQueue.remove(topTask);
+                if (topTask.durationOnCpu == topTask.duration) {
+                    topTask.state = TaskState.FINISHED;
+                    this.freeResources(topTask.type);
+                    this.currentTask = null;
+                }
+                topTask.incrementDurationOnCpu();
+            } else {
+                topTask.state = TaskState.WAITING;
+                this.readyQueue.remove(topTask);
+                this.waitingQueue.add(topTask);
+            }
+
+        } else if (this.currentTask != null) {
+            Task topTask = this.currentTask;
+            if (topTask.durationOnCpu == topTask.duration) {
+                topTask.state = TaskState.FINISHED;
+                this.freeResources(topTask.type);
+                this.currentTask = null;
+            }
+            topTask.incrementDurationOnCpu();
+
+        }
+
+        if (!this.waitingQueue.isEmpty()) {
+            processWaitingQueue();
+        }
+
+    }
+
+    public void RR() {
+        if (this.currentTask == null && !this.readyQueue.isEmpty()) {
+
+            Queue<Task> localQueue = new PriorityQueue<>(readyQueue);
+            Task topTask = localQueue.poll();
+
+            assert topTask != null;
+
+            if (checkResourceAvailability(topTask.type, true)) {
+                topTask.setStartRound(this.currentRound);
+                topTask.state = TaskState.RUNNING;
+                topTask.startRound = currentRound;
+                this.currentTask = topTask;
+                this.readyQueue.remove(topTask);
+                if (topTask.durationOnCpu == topTask.duration) {
+                    topTask.state = TaskState.FINISHED;
+                    this.freeResources(topTask.type);
+                    this.currentTask = null;
+                }
+                topTask.incrementDurationOnCpu();
+            } else {
+                topTask.state = TaskState.WAITING;
+                this.readyQueue.remove(topTask);
+                this.waitingQueue.add(topTask);
+            }
+
+        } else if (this.currentTask != null) {
+            Task topTask = this.currentTask;
+            if (topTask.durationOnCpu == 3 + 1) {
+                topTask.state = TaskState.READY;
+                topTask.durationOnCpu = 0;
+                this.freeResources(topTask.type);
+                this.readyQueue.offer(topTask);
+                this.currentTask = null;
+            } else {
+                if (topTask.durationOnCpu == topTask.duration) {
+                    topTask.state = TaskState.FINISHED;
+                    this.freeResources(topTask.type);
+                    this.currentTask = null;
+                }
+                topTask.incrementDurationOnCpu();
+            }
+        }
+
+        if (!this.waitingQueue.isEmpty()) {
             processWaitingQueue();
         }
     }
+
 
     private void processWaitingQueue() {
         Queue<Task> schedulable = new PriorityQueue<>();
@@ -76,25 +176,19 @@ public class Processor implements Runnable {
 
         for (int i = 0; i < temp.size(); i++) {
             Task topOnWaiting = temp.poll();
+            if (topOnWaiting.durationOnWait >= 4) {
+                topOnWaiting.priority++;
+            }
             if (checkResourceAvailability(topOnWaiting.type, false)) {
                 schedulable.add(topOnWaiting);
             }
         }
-
-//        Comparator<Task> durationOnWaitComparator = Comparator.comparing(task -> task.durationOnWait);
-//        Comparator<Task> priorityComparator = Comparator.comparing(task -> task.priority);
-//        priorityComparator = priorityComparator.thenComparing(durationOnWaitComparator);
-//
-//        schedulable.sort(priorityComparator);
-//        Collections.reverse(schedulable);
-
 
         Task topPriority = schedulable.poll();
 
         if (topPriority != null) {
             this.waitingQueue.remove(topPriority);
             topPriority.priority++;
-            topPriority.durationOnWait = currentRound;
             topPriority.state = TaskState.READY;
             this.readyQueue.offer(topPriority);
         }

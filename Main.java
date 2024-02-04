@@ -8,10 +8,11 @@ public class Main {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         int[] resources = new int[3];
+        List<Task> tasks = new ArrayList<>();
         Queue<Task> readyQueue = new LinkedList<>();
         Queue<Task> waitingQueue = new LinkedList<Task>();
 
-        File file = new File("/Users/mbina/Desktop/Uni/Network/OS_Scheduler/testcases/input3.txt");
+        File file = new File("/Users/mbina/Desktop/Uni/Network/OS_Scheduler/testcases/input2.txt");
         Scanner scanner = new Scanner(file);
 
         while (scanner.hasNextLine()) {
@@ -24,7 +25,9 @@ public class Main {
                 String name = scanner.next();
                 char type = scanner.next().charAt(0);
                 int duration = scanner.nextInt();
-                readyQueue.add(new Task(name, type, duration));
+                Task newTask = new Task(name, type, duration);
+                readyQueue.add(newTask);
+                tasks.add(newTask);
             }
         }
 
@@ -41,8 +44,6 @@ public class Main {
         while (true) {
             Round++;
             Thread[] processorThreads = new Thread[PROCESSOR_COUNT];
-
-
 
             for (int i = 0; i < PROCESSOR_COUNT; i++) {
                 processors.get(i).setCurrentRound(Round);
@@ -62,13 +63,28 @@ public class Main {
             System.out.println("Waiting Queue : " + waitingQueue);
             System.out.println(printResult(processors, Round));
 
-            for (Processor processor : processors) {
-                if (processor.currentTask != null) breakOrNot = false;
+            for (Task e : waitingQueue) {
+                e.durationOnWait++;
+            }
+
+            for (Task e :
+                    tasks) {
+                if (e.state != TaskState.FINISHED) {
+                    breakOrNot = false;
+                }
             }
 
             if (breakOrNot) break;
 
         }
+
+        double sumWaiting = 0;
+        for (Task e :
+                tasks) {
+            sumWaiting += e.durationOnWait;
+        }
+        System.out.println("Average waiting: " + sumWaiting / tasks.size());
+
 
     }
 
