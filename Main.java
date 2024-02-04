@@ -12,7 +12,7 @@ public class Main {
         Queue<Task> readyQueue = new LinkedList<>();
         Queue<Task> waitingQueue = new LinkedList<Task>();
 
-        File file = new File("/Users/mbina/Desktop/Uni/Network/OS_Scheduler/testcases/input2.txt");
+        File file = new File("/Users/mbina/Desktop/Uni/Network/OS_Scheduler/testcases/input3.txt");
         Scanner scanner = new Scanner(file);
 
         while (scanner.hasNextLine()) {

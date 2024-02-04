@@ -44,7 +44,7 @@ public class Processor implements Runnable {
                     this.freeResources(topTask.type);
                     this.currentTask = null;
                 }
-                topTask.incrementDurationOnCpu();
+
             } else {
                 topTask.state = TaskState.WAITING;
                 this.readyQueue.remove(topTask);
@@ -96,7 +96,7 @@ public class Processor implements Runnable {
                     this.freeResources(topTask.type);
                     this.currentTask = null;
                 }
-                topTask.incrementDurationOnCpu();
+
             } else {
                 topTask.state = TaskState.WAITING;
                 this.readyQueue.remove(topTask);
@@ -131,7 +131,6 @@ public class Processor implements Runnable {
             if (checkResourceAvailability(topTask.type, true)) {
                 topTask.setStartRound(this.currentRound);
                 topTask.state = TaskState.RUNNING;
-                topTask.startRound = currentRound;
                 this.currentTask = topTask;
                 this.readyQueue.remove(topTask);
                 if (topTask.durationOnCpu == topTask.duration) {
@@ -139,7 +138,6 @@ public class Processor implements Runnable {
                     this.freeResources(topTask.type);
                     this.currentTask = null;
                 }
-                topTask.incrementDurationOnCpu();
             } else {
                 topTask.state = TaskState.WAITING;
                 this.readyQueue.remove(topTask);
@@ -148,17 +146,24 @@ public class Processor implements Runnable {
 
         } else if (this.currentTask != null) {
             Task topTask = this.currentTask;
-            if (topTask.durationOnCpu == 3 + 1) {
-                topTask.state = TaskState.READY;
-                topTask.durationOnCpu = 0;
+
+            if (topTask.durationOnCpu == topTask.duration) {
+                topTask.state = TaskState.FINISHED;
                 this.freeResources(topTask.type);
-                this.readyQueue.offer(topTask);
                 this.currentTask = null;
             } else {
-                if (topTask.durationOnCpu == topTask.duration) {
-                    topTask.state = TaskState.FINISHED;
-                    this.freeResources(topTask.type);
+                if (topTask.durationOnCurrentCpu == 3 + 1) {
+                    if (topTask.durationOnCpu + 1 == topTask.duration) {
+                        topTask.state = TaskState.FINISHED;
+                        this.freeResources(topTask.type);
+                    }else{
+                        topTask.state = TaskState.READY;
+                        topTask.durationOnCurrentCpu = 0;
+                        this.freeResources(topTask.type);
+                        this.readyQueue.offer(topTask);
+                    }
                     this.currentTask = null;
+
                 }
                 topTask.incrementDurationOnCpu();
             }

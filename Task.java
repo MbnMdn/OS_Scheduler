@@ -3,7 +3,8 @@ public class Task implements Comparable<Task> {
     public TaskType type;
     public TaskState state = TaskState.NOT_STARTED;
     public int duration;
-    public int durationOnCpu;
+    public int durationOnCpu = 1;
+    public int durationOnCurrentCpu;
     public int durationOnWait;
     public int priority;
     public int startRound;
@@ -26,10 +27,7 @@ public class Task implements Comparable<Task> {
 
     public void incrementDurationOnCpu() {
         this.durationOnCpu++;
-    }
-
-    public void incrementDurationOnWait() {
-        this.durationOnWait++;
+        this.durationOnCurrentCpu++;
     }
 
     public char getType() {
