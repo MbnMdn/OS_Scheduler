@@ -19,13 +19,13 @@ in this system also exist resources that are needed by different types of proces
     - W = Waiting Time
     - S = Burst Time
 
-# Flow
+# FLOW
 
 in main, there exist the ready queue and the waiting queue, and also the While loop which is the main part of scheduling is happening
 
 while loop breaks when there is no Un-finished task, also when there is a deadlock
 
 
-# How to run
+# HOW TO RUN
 Run Main.java and in public void run(), change the function to your desired algorithm. ( on Processor.java line : 316)
  
