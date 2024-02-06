@@ -12,7 +12,7 @@ public class Main {
         Queue<Task> readyQueue = new LinkedList<>();
         Queue<Task> waitingQueue = new LinkedList<Task>();
 
-        File file = new File("/Users/mbina/Desktop/Uni/Network/OS_Scheduler/testcases/input2-3.txt");
+        File file = new File("/Users/mbina/Desktop/Uni/Network/OS_Scheduler/testcases/input2-2.txt");
         Scanner scanner = new Scanner(file);
 
         while (scanner.hasNextLine()) {
@@ -42,6 +42,8 @@ public class Main {
         }
 
         int Round = 0;
+        int countIDLEs = 0;
+
         while (true) {
             Round++;
             Thread[] processorThreads = new Thread[PROCESSOR_COUNT];
@@ -73,6 +75,21 @@ public class Main {
                     breakOrNot = false;
                 }
             }
+
+            boolean test = true;
+
+            for (Processor e :
+                    processors) {
+                if(e.currentTask != null){
+                    test = false;
+                }
+            }
+
+            if(test){
+                countIDLEs++;
+            }
+
+            if(countIDLEs > 2) break;
 
             if (breakOrNot) break;
 

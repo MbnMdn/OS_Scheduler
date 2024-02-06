@@ -2,13 +2,13 @@ import java.util.*;
 
 public class Processor implements Runnable {
     final int QUANTUM = 3;
+    final int waitLimit = 4;
 
     final Lock lock;
     String name;
 
     Queue<Task> readyQueue;
     Queue<Task> waitingQueue;
-    Queue<Task> localQueue;
     int[] availableResources;
     int currentRound;
     Task currentTask;
@@ -47,7 +47,6 @@ public class Processor implements Runnable {
                     this.freeResources(topTask.type);
                     this.currentTask = null;
                 }
-
             } else {
                 topTask.state = TaskState.WAITING;
                 this.readyQueue.remove(topTask);
@@ -174,10 +173,6 @@ public class Processor implements Runnable {
 
     public void RR() {
 
-        if (!this.waitingQueue.isEmpty()) {
-            processWaitingQueue();
-        }
-
         if (this.currentTask == null && !this.readyQueue.isEmpty()) {
 
             Queue<Task> localQueue = new PriorityQueue<>(readyQueue);
@@ -209,7 +204,8 @@ public class Processor implements Runnable {
                 this.freeResources(topTask.type);
                 this.currentTask = null;
             } else {
-                if (topTask.durationOnCurrentCpu == QUANTUM + 1) {
+                if (topTask.durationOnCurrentCpu == QUANTUM) {
+//                    System.out.println(topTask + " FREED");
                     if (topTask.durationOnCpu + 1 == topTask.duration) {
                         topTask.state = TaskState.FINISHED;
                         this.freeResources(topTask.type);
@@ -225,6 +221,10 @@ public class Processor implements Runnable {
                 topTask.incrementDurationOnCpu();
             }
         }
+
+        if (!this.waitingQueue.isEmpty()) {
+            processWaitingQueue();
+        }
     }
 
     private void processWaitingQueue() {
@@ -233,7 +233,7 @@ public class Processor implements Runnable {
 
         for (int i = 0; i < temp.size(); i++) {
             Task topOnWaiting = temp.poll();
-            if (topOnWaiting.durationOnWait >= 4) {
+            if (topOnWaiting.durationOnWait >= waitLimit) {
                 topOnWaiting.priority++;
             }
             if (checkResourceAvailability(topOnWaiting.type, false)) {
@@ -313,7 +313,7 @@ public class Processor implements Runnable {
             this.currentTask = null;
         }
         synchronized (this.lock) {
-            this.HRRN();
+            this.FCFS();
         }
     }
 
