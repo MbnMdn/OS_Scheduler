@@ -12,7 +12,7 @@ public class Main {
         Queue<Task> readyQueue = new LinkedList<>();
         Queue<Task> waitingQueue = new LinkedList<Task>();
 
-        File file = new File("/Users/mbina/Desktop/Uni/Network/OS_Scheduler/testcases/input3.txt");
+        File file = new File("/Users/mbina/Desktop/Uni/Network/OS_Scheduler/testcases/input2-3.txt");
         Scanner scanner = new Scanner(file);
 
         while (scanner.hasNextLine()) {
@@ -30,6 +30,7 @@ public class Main {
                 tasks.add(newTask);
             }
         }
+
 
         ArrayList<Processor> processors = new ArrayList<>();
 
@@ -67,8 +68,7 @@ public class Main {
                 e.durationOnWait++;
             }
 
-            for (Task e :
-                    tasks) {
+            for (Task e : tasks) {
                 if (e.state != TaskState.FINISHED) {
                     breakOrNot = false;
                 }
@@ -81,10 +81,8 @@ public class Main {
         double sumWaiting = 0;
         for (Task e :
                 tasks) {
-            sumWaiting += e.durationOnWait;
+            sumWaiting += e.startRound;
         }
-        System.out.println("Average waiting: " + sumWaiting / tasks.size());
-
 
     }
 

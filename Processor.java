@@ -1,12 +1,14 @@
 import java.util.*;
-import java.util.stream.Stream;
 
 public class Processor implements Runnable {
+    final int QUANTUM = 3;
+
     final Lock lock;
     String name;
 
     Queue<Task> readyQueue;
     Queue<Task> waitingQueue;
+    Queue<Task> localQueue;
     int[] availableResources;
     int currentRound;
     Task currentTask;
@@ -20,11 +22,12 @@ public class Processor implements Runnable {
         this.waitingQueue = waitingQueue;
     }
 
-    public void setCurrentRound(int currentRound) {
-        this.currentRound = currentRound;
-    }
-
     public void FCFS() {
+
+        if (!this.waitingQueue.isEmpty()) {
+            processWaitingQueue();
+        }
+
         if (this.currentTask == null && !this.readyQueue.isEmpty()) {
 
             Queue<Task> localQueue = new PriorityQueue<>(readyQueue);
@@ -63,13 +66,66 @@ public class Processor implements Runnable {
             topTask.incrementDurationOnCpu();
         }
 
+    }
+
+    public void HRRN() {
+
         if (!this.waitingQueue.isEmpty()) {
             processWaitingQueue();
+        }
+
+        if (this.currentTask == null && !this.readyQueue.isEmpty()) {
+
+            List<Task> localQueue = new ArrayList<>(readyQueue);
+
+            Comparator<Task> durationCompare = Comparator.comparing(task -> {
+                return (currentRound + task.duration) / task.duration;
+            });
+            Comparator<Task> priorityComparator = Comparator.comparing(task -> task.priority);
+
+            priorityComparator = durationCompare.reversed().thenComparing(priorityComparator.reversed());
+            localQueue.sort(priorityComparator);
+
+            Task topTask = localQueue.remove(0);
+
+            assert topTask != null;
+
+            if (checkResourceAvailability(topTask.type, true)) {
+                topTask.setStartRound(this.currentRound);
+                topTask.state = TaskState.RUNNING;
+                topTask.startRound = currentRound;
+                this.currentTask = topTask;
+                this.readyQueue.remove(topTask);
+                if (topTask.durationOnCpu == topTask.duration) {
+                    topTask.state = TaskState.FINISHED;
+                    this.freeResources(topTask.type);
+                    this.currentTask = null;
+                }
+
+            } else {
+                topTask.state = TaskState.WAITING;
+                this.readyQueue.remove(topTask);
+                this.waitingQueue.add(topTask);
+            }
+
+        } else if (this.currentTask != null) {
+            Task topTask = this.currentTask;
+            if (topTask.durationOnCpu == topTask.duration) {
+                topTask.state = TaskState.FINISHED;
+                this.freeResources(topTask.type);
+                this.currentTask = null;
+            }
+            topTask.incrementDurationOnCpu();
+
         }
 
     }
 
     public void SJF() {
+
+        if (!this.waitingQueue.isEmpty()) {
+            processWaitingQueue();
+        }
 
         if (this.currentTask == null && !this.readyQueue.isEmpty()) {
 
@@ -114,13 +170,14 @@ public class Processor implements Runnable {
 
         }
 
+    }
+
+    public void RR() {
+
         if (!this.waitingQueue.isEmpty()) {
             processWaitingQueue();
         }
 
-    }
-
-    public void RR() {
         if (this.currentTask == null && !this.readyQueue.isEmpty()) {
 
             Queue<Task> localQueue = new PriorityQueue<>(readyQueue);
@@ -152,11 +209,11 @@ public class Processor implements Runnable {
                 this.freeResources(topTask.type);
                 this.currentTask = null;
             } else {
-                if (topTask.durationOnCurrentCpu == 3 + 1) {
+                if (topTask.durationOnCurrentCpu == QUANTUM + 1) {
                     if (topTask.durationOnCpu + 1 == topTask.duration) {
                         topTask.state = TaskState.FINISHED;
                         this.freeResources(topTask.type);
-                    }else{
+                    } else {
                         topTask.state = TaskState.READY;
                         topTask.durationOnCurrentCpu = 0;
                         this.freeResources(topTask.type);
@@ -168,12 +225,7 @@ public class Processor implements Runnable {
                 topTask.incrementDurationOnCpu();
             }
         }
-
-        if (!this.waitingQueue.isEmpty()) {
-            processWaitingQueue();
-        }
     }
-
 
     private void processWaitingQueue() {
         Queue<Task> schedulable = new PriorityQueue<>();
@@ -201,25 +253,6 @@ public class Processor implements Runnable {
 
     }
 
-
-    @Override
-    public String toString() {
-        return "Core='" + name + '\'' +
-                ", currentTask=" + currentTask +
-                "\n";
-    }
-
-    @Override
-    public void run() {
-        if (this.currentTask != null && this.currentTask.state == TaskState.FINISHED) {
-            this.freeResources(this.currentTask.type);
-            this.currentTask = null;
-        }
-        synchronized (this.lock) {
-            this.FCFS();
-        }
-    }
-
     private boolean checkResourceAvailability(TaskType type, boolean allocate) {
         switch (type) {
             case X:
@@ -230,6 +263,7 @@ public class Processor implements Runnable {
                     }
                     return true;
                 }
+                break;
             case Y:
                 if (this.availableResources[1] >= 1 && this.availableResources[2] >= 1) {
                     if (allocate) {
@@ -237,8 +271,8 @@ public class Processor implements Runnable {
                         this.availableResources[2]--;
                     }
                     return true;
-
                 }
+                break;
             case Z:
                 if (this.availableResources[0] >= 1 && this.availableResources[2] >= 1) {
                     if (allocate) {
@@ -246,8 +280,10 @@ public class Processor implements Runnable {
                         this.availableResources[2]--;
                     }
                     return true;
-
                 }
+                break;
+            default:
+                return false;
         }
 
         return false;
@@ -270,5 +306,26 @@ public class Processor implements Runnable {
         }
     }
 
+    @Override
+    public void run() {
+        if (this.currentTask != null && this.currentTask.state == TaskState.FINISHED) {
+            this.freeResources(this.currentTask.type);
+            this.currentTask = null;
+        }
+        synchronized (this.lock) {
+            this.HRRN();
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "Core='" + name + '\'' +
+                ", currentTask=" + currentTask +
+                "\n";
+    }
+
+    public void setCurrentRound(int currentRound) {
+        this.currentRound = currentRound;
+    }
 
 }
